@@ -171,7 +171,7 @@ syscall(void)
         value = value << i;
         if((p->mask & value) != 0 && p->mask != 0)
         {
-            printf("%d: syscall: %s\n",p->pid, syscalls_name[i]);
+            printf("%d: syscall %s -> %d\n",p->pid, syscalls_name[i], p->trapframe->a0);
         }
     }
   } else {
