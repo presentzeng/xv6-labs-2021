@@ -106,3 +106,15 @@ sys_trace(void)
   p->mask = n;
   return 1;
 }
+
+
+uint64
+sys_sysinfo(void)
+{
+  //int n;
+  //if(argint(0, &n) < 0)
+  //  return -1;
+  //struct proc *p = myproc();
+  //p->mask = n;
+  return 1;
+}
