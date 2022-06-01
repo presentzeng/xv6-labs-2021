@@ -46,7 +46,7 @@ testmem() {
   sinfo(&info);
 
   if (info.freemem!= n) {
-    printf("FAIL: free mem %d (bytes) instead of %d\n", info.freemem, n);
+    printf("FAIL:fir free mem %d (bytes) instead of %d\n", info.freemem, n);
     exit(1);
   }
   
@@ -58,7 +58,7 @@ testmem() {
   sinfo(&info);
     
   if (info.freemem != n-PGSIZE) {
-    printf("FAIL: free mem %d (bytes) instead of %d\n", n-PGSIZE, info.freemem);
+    printf("FAIL:sec free mem %d (bytes) instead of %d\n", n-PGSIZE, info.freemem);
     exit(1);
   }
   
@@ -109,7 +109,7 @@ void testproc() {
   if(pid == 0){
     sinfo(&info);
     if(info.nproc != nproc+1) {
-      printf("sysinfotest: FAIL nproc is %d instead of %d\n", info.nproc, nproc+1);
+      printf("fir sysinfotest: FAIL nproc is %d instead of %d\n", info.nproc, nproc+1);
       exit(1);
     }
     exit(0);
@@ -117,7 +117,7 @@ void testproc() {
   wait(&status);
   sinfo(&info);
   if(info.nproc != nproc) {
-      printf("sysinfotest: FAIL nproc is %d instead of %d\n", info.nproc, nproc);
+      printf("sec sysinfotest: FAIL nproc is %d instead of %d\n", info.nproc, nproc);
       exit(1);
   }
 }

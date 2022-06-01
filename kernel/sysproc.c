@@ -112,20 +112,38 @@ sys_trace(void)
 //  uint64 freemem;   // amount of free memory (bytes)
 //  uint64 nproc;     // number of process
 //};
+
+int
+infostat(uint64 addr)
+{
+    struct proc *p = myproc();
+    struct sysinfo st;
+    st.nproc = countproc();
+    st.freemem = kcount() * 4096;
+    if(copyout(p->pagetable, addr, (char *)&st, sizeof(st)) < 0)
+        return -1;
+    return 0;
+}
+
 uint64
 sys_sysinfo(void)
 {
- struct sysinfo src;
- //printf("sys_sysinfo %d\n",  countproc());
- src.nproc = countproc();
- src.freemem = kcount();
- struct proc *p = myproc();
- int psys;
- if(argint(0, &psys) < 0)
-   return -1;
- if(copyout(p->pagetable, psys, (char *)&src, sizeof(struct sysinfo)) < 0)
-   return -1;
- return 1;
+    uint64 st;
+    if(argaddr(0, &st) < 0)
+        return -1;
+    return infostat(st);
+
+ //struct sysinfo src;
+ ////printf("sys_sysinfo %d\n",  countproc());
+ //src.nproc = countproc();
+ //src.freemem = kcount();
+ //struct proc *p = myproc();
+ //int psys;
+ //if(argint(0, &psys) < 0)
+ //  return -1;
+ //if(copyout(p->pagetable, psys, (char *)&src, sizeof(struct sysinfo)) < 0)
+ //  return -1;
+ //return 1;
 
   //int n;
   //struct proc *p = myproc();

@@ -101,6 +101,5 @@ kcount(void)
         { break; }
     }
    release(&kmem.lock);
-   printf("Kcount\n");
    return i;
 }
