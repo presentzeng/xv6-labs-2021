@@ -97,6 +97,25 @@ allocpid() {
   return pid;
 }
 
+
+// Look in the process table for an UNUSED proc.
+int
+countproc(void)
+{
+  struct proc *p;
+  int i = 0;
+  for(p = proc; p < &proc[NPROC]; p++) {
+    acquire(&p->lock);
+    if(p->state == UNUSED) {
+        i++;
+        release(&p->lock);
+    } else {
+        release(&p->lock);
+    }
+  }
+  return i;
+}
+
 // Look in the process table for an UNUSED proc.
 // If found, initialize state required to run in the kernel,
 // and return with p->lock held.

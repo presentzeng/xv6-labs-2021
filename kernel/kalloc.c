@@ -46,6 +46,7 @@ freerange(void *pa_start, void *pa_end)
 void
 kfree(void *pa)
 {
+  //printf("kfree\n");
   struct run *r;
 
   if(((uint64)pa % PGSIZE) != 0 || (char*)pa < end || (uint64)pa >= PHYSTOP)
@@ -68,6 +69,7 @@ kfree(void *pa)
 void *
 kalloc(void)
 {
+  //printf("kalloc\n");
   struct run *r;
 
   acquire(&kmem.lock);
@@ -79,4 +81,26 @@ kalloc(void)
   if(r)
     memset((char*)r, 5, PGSIZE); // fill with junk
   return (void*)r;
+}
+
+int
+kcount(void)
+{
+    struct run *pt;
+    acquire(&kmem.lock);
+    int i = 0;
+    pt = kmem.freelist;
+    while(1)
+    {
+        if(pt)
+        { 
+            i++; 
+            pt = pt->next;
+        }
+        else
+        { break; }
+    }
+   release(&kmem.lock);
+   printf("Kcount\n");
+   return i;
 }

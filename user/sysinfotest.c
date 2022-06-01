@@ -21,7 +21,6 @@ countfree()
   uint64 sz0 = (uint64)sbrk(0);
   struct sysinfo info;
   int n = 0;
-
   while(1){
     if((uint64)sbrk(PGSIZE) == 0xffffffffffffffff){
       break;
@@ -43,6 +42,7 @@ testmem() {
   struct sysinfo info;
   uint64 n = countfree();
   
+  //printf("testmem %x\n", &info);
   sinfo(&info);
 
   if (info.freemem!= n) {
@@ -79,13 +79,14 @@ void
 testcall() {
   struct sysinfo info;
   
+  //printf("testcall %x\n", &info);
   if (sysinfo(&info) < 0) {
     printf("FAIL: sysinfo failed\n");
     exit(1);
   }
 
   if (sysinfo((struct sysinfo *) 0xeaeb0b5b00002f5e) !=  0xffffffffffffffff) {
-    printf("FAIL: sysinfo succeeded with bad argument\n");
+    printf("FAIL:testcall sysinfo succeeded with bad argument\n");
     exit(1);
   }
 }
@@ -96,6 +97,7 @@ void testproc() {
   int status;
   int pid;
   
+  printf("testproc %x\n", &info);
   sinfo(&info);
   nproc = info.nproc;
 
@@ -123,10 +125,8 @@ void testproc() {
 int
 main(int argc, char *argv[])
 {
-  printf("sysinfotest: start\n");
   testcall();
   testmem();
   testproc();
-  printf("sysinfotest: OK\n");
   exit(0);
 }

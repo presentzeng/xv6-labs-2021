@@ -6,6 +6,7 @@
 #include "memlayout.h"
 #include "spinlock.h"
 #include "proc.h"
+#include "sysinfo.h"
 
 uint64
 sys_exit(void)
@@ -107,14 +108,27 @@ sys_trace(void)
   return 1;
 }
 
-
+//struct sysinfo {
+//  uint64 freemem;   // amount of free memory (bytes)
+//  uint64 nproc;     // number of process
+//};
 uint64
 sys_sysinfo(void)
 {
+ struct sysinfo src;
+ //printf("sys_sysinfo %d\n",  countproc());
+ src.nproc = countproc();
+ src.freemem = kcount();
+ struct proc *p = myproc();
+ int psys;
+ if(argint(0, &psys) < 0)
+   return -1;
+ if(copyout(p->pagetable, psys, (char *)&src, sizeof(struct sysinfo)) < 0)
+   return -1;
+ return 1;
+
   //int n;
-  //if(argint(0, &n) < 0)
-  //  return -1;
   //struct proc *p = myproc();
   //p->mask = n;
-  return 1;
+  //return 1;
 }
