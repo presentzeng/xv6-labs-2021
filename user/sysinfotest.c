@@ -97,7 +97,7 @@ void testproc() {
   int status;
   int pid;
   
-  printf("testproc %x\n", &info);
+  //printf("testproc %x\n", &info);
   sinfo(&info);
   nproc = info.nproc;
 
@@ -128,5 +128,6 @@ main(int argc, char *argv[])
   testcall();
   testmem();
   testproc();
+  printf("sysinfotest: OK\n");
   exit(0);
 }
