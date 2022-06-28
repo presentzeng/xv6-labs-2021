@@ -15,6 +15,34 @@ extern char etext[];  // kernel.ld sets this to end of kernel code.
 
 extern char trampoline[]; // trampoline.S
 
+// kernel/vm.c
+int pgtblprint(pagetable_t pagetable, int depth) {
+  // there are 2^9 = 512 PTEs in a page table.
+  for(int i = 0; i < 512; i++){
+    pte_t pte = pagetable[i];
+    if(pte & PTE_V) { // 如果页表项有效
+      // 按格式打印页表项
+      printf("..");
+      for(int j=0;j<depth;j++) {
+        printf(" ..");
+      }
+      printf("%d: pte %p pa %p\n", i, pte, PTE2PA(pte));
+
+      // 如果该节点不是叶节点，递归打印其子节点。
+      if((pte & (PTE_R|PTE_W|PTE_X)) == 0){
+        // this PTE points to a lower-level page table.
+        uint64 child = PTE2PA(pte);
+        pgtblprint((pagetable_t)child,depth+1);
+      }
+    }
+  }
+  return 0;
+}
+
+int vmprint(pagetable_t pagetable) {
+  printf("page table %p\n", pagetable);
+  return pgtblprint(pagetable, 0);
+}
 // Make a direct-map page table for the kernel.
 pagetable_t
 kvmmake(void)
@@ -65,6 +93,43 @@ kvminithart()
   sfence_vma();
 }
 
+//code by presentzeng@gmail.com
+
+/* version by present*/
+/*
+pte_t *
+walk(pagetable_t pagetable, uint64 va, int alloc)
+{
+    if(va > MAXVA)
+    { panic("walk"); }
+
+    for(int lvl = 2; lvl > 0; lvl--)
+    {
+        uint64 offset =  BIT2OFFSET(lvl, va);
+        pte_t* pte = &pagetable[offset];
+        if((*pte & 0x1) == 0) //invalid
+        {
+            if(alloc != 0) //alloc new
+            {
+                if((pagetable = (uint64*)kalloc()) ==0)  //kalloc and make it valid
+                { return 0;}
+                //return pagetable;
+            }
+            //memset the old one
+            memset(pagetable, 0, PGSIZE);
+            *pte = PATOPTE(pagetable) | 0x1;
+        }
+        else // valid
+        {
+            //return (pagetable_t)PTETOPA(*pte);
+            pagetable = (uint64 *)PTETOPA(*pte);
+        }
+    }
+    return &pagetable[BIT2OFFSET(0, va)];
+}
+*/
+
+
 // Return the address of the PTE in page table pagetable
 // that corresponds to virtual address va.  If alloc!=0,
 // create any required page-table pages.
@@ -77,25 +142,82 @@ kvminithart()
 //   21..29 -- 9 bits of level-1 index.
 //   12..20 -- 9 bits of level-0 index.
 //    0..11 -- 12 bits of byte offset within the page.
+#define BIT2OFFSET(level, va)  ((va >> 12) >> level*9) & 0x1ff
+#define PTETOPA(pte)  ((pte >> 10) << 12)
+#define PATOPTE(pa) (((uint64)pa >> 12) << 10)
 pte_t *
 walk(pagetable_t pagetable, uint64 va, int alloc)
 {
-  if(va >= MAXVA)
-    panic("walk");
-
-  for(int level = 2; level > 0; level--) {
-    pte_t *pte = &pagetable[PX(level, va)];
-    if(*pte & PTE_V) {
-      pagetable = (pagetable_t)PTE2PA(*pte);
-    } else {
-      if(!alloc || (pagetable = (pde_t*)kalloc()) == 0)
-        return 0;
-      memset(pagetable, 0, PGSIZE);
-      *pte = PA2PTE(pagetable) | PTE_V;
+    if(va > MAXVA)
+        panic("walk");
+    
+    // get pte from first level page
+    uint64 *first_pte = &pagetable[BIT2OFFSET(2, va)];
+    // if valid first page
+    if((*first_pte & 0x1) != 0) //valid
+    {
+        //get next pagetable address
+        pagetable = (uint64 *)PTETOPA(*first_pte);
+        uint64 *second_pte = &pagetable[BIT2OFFSET(1, va)];
+        if((*second_pte & 0x1) != 0)
+        {
+            pagetable = (uint64 *)PTETOPA(*second_pte);
+            return &pagetable[PX(0, va)];
+        }
+        else //second lvl page create
+        {
+            //uint64 *second_pte = (uint64*)pagetable[BIT2OFFSET(1, va)];
+            if(!alloc || ((pagetable = kalloc()) == 0))
+            {
+               return 0;
+            }
+            memset(pagetable, 0, PGSIZE);
+            *second_pte = PA2PTE(pagetable) | PTE_V;
+            // once created, go to next lvl
+            pagetable = (uint64 *)PTETOPA(*second_pte);
+            //uint64 *third_pte = &pagetable[BIT2OFFSET(0, va)];
+            return &pagetable[PX(0, va)];
+        }
     }
-  }
-  return &pagetable[PX(0, va)];
+    else //if first is not valid
+    {
+        if(!alloc || ((pagetable = kalloc()) == 0))
+        {
+           return 0;
+        }
+        else
+        {
+            memset(pagetable, 0, PGSIZE);
+            *first_pte = PA2PTE(pagetable) | PTE_V;
+        }
+        pagetable = (uint64 *)PTETOPA(*first_pte);
+        uint64 *second_pte = &pagetable[BIT2OFFSET(1, va)];
+        if((*second_pte & 0x1) != 0)
+        {
+            pagetable = (uint64 *)PTETOPA(*second_pte);
+            //uint64 *third_pte = &pagetable[BIT2OFFSET(0, va)];
+            return &pagetable[PX(0, va)];
+        }
+        else //second lvl page create
+        {
+            uint64 *second_pte = &pagetable[BIT2OFFSET(1, va)];
+            if(!alloc || ((pagetable = kalloc()) == 0))
+            {
+               return 0;
+            }
+            else
+            {
+                memset(pagetable, 0, PGSIZE);
+                *second_pte = PA2PTE(pagetable) | PTE_V;
+            }
+            // once created, go to next lvl
+            pagetable = (uint64 *)PTETOPA(*second_pte);
+            //uint64 *third_pte = &pagetable[BIT2OFFSET(0, va)];
+            return &pagetable[PX(0, va)];
+        }
+    }
 }
+
 
 // Look up a virtual address, return the physical address,
 // or 0 if not mapped.
