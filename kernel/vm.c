@@ -176,7 +176,8 @@ walk(pagetable_t pagetable, uint64 va, int alloc)
             // once created, go to next lvl
             pagetable = (uint64 *)PTETOPA(*second_pte);
             //uint64 *third_pte = &pagetable[BIT2OFFSET(0, va)];
-            return &pagetable[PX(0, va)];
+            return (pte_t*)PTETOPA(*second_pte);
+            //return &pagetable[PX(0, va)];
         }
     }
     else //if first is not valid
