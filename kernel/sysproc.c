@@ -89,21 +89,27 @@ sys_pgaccess(void)
   if(argint(1, &n) < 0)
     return -1;
 
-  uint64 bit;
-  if(argaddr(2, &bit) < 0)
+  uint64 ubit;
+  uint64 bit = 0;
+  if(argaddr(2, &ubit) < 0)
     return -1;
-  unsigned int * pbit =(unsigned int *) bit;
+  unsigned int * upbit =(unsigned int *) ubit;
+  //unsigned int * pbit = (unsigned int *) bit;
 
-  for(int i = 0; i < n; i++)
+  for(int i = 1; i < n; i++)
   {
     //walk(myproc()->pagetable, (uint64)&buf[i*PGSIZE], 0);
     pte_t *pte = walk(myproc()->pagetable, (uint64)&buf[i*PGSIZE], 0);
     if(*pte & PTE_A)
     {
-        *pbit = *pbit & (1 << i);
-        printf("here %d\n", i);
+        //*pbit = *pbit & (1 << i);
+        bit = bit | (1 << i);
+        printf("%d\n", bit);
+        *pte = *pte & ~(1 << i);
     }
   }
+  if(copyout(myproc()->pagetable, (uint64) upbit, (char *)&bit, sizeof(bit)) < 0)
+    return -1;
   // lab pgtbl: your code here.
   return 0;
 }
